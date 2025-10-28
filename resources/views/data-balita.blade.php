@@ -31,8 +31,8 @@
 <script>
 // load and render table same logic as original
 const dataStatis = [
-  { nama: "Dani Ahmad", jk: "Laki-laki", usia: 24, bb: 9.5, tb: 73, status: "Gizi Kurang", rekom: "Tingkatkan asupan protein hewani seperti telur, ikan, ayam.", tanggal: "09-10-2025" },
-  { nama: "Rani Lestari", jk: "Perempuan", usia: 30, bb: 11.2, tb: 80, status: "Gizi Baik", rekom: "Pertahankan pola makan seimbang, tambah buah setiap hari.", tanggal: "09-10-2025" }
+  { nama: "Dani Ahmad", jk: "Laki-laki", usia: 24, bb: 9.5, tb: 73, status: "Gizi Kurang", rekom: "Tingkatkan asupan protein hewani seperti telur, ikan, ayam.", tanggal: "09/10/2025" },
+  { nama: "Rani Lestari", jk: "Perempuan", usia: 30, bb: 11.2, tb: 80, status: "Gizi Baik", rekom: "Pertahankan pola makan seimbang, tambah buah setiap hari.", tanggal: "09/10/2025" }
 ];
 let dataLocal = JSON.parse(localStorage.getItem('dataBalita') || '[]');
 let changed = false;

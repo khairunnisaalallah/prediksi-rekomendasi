@@ -1,24 +1,24 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>@yield('title', 'Web Gizi Anak')</title>
-  <link rel="shortcut icon" type="image/png" href="{{ asset('assets/images/logos/favicon.png') }}" />
-  <link rel="stylesheet" href="{{ asset('assets/css/styles.min.css') }}" />
-</head>
+  <!doctype html>
+  <html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title', 'Web Gizi Anak')</title>
+    <link rel="shortcut icon" type="image/png" href="{{ asset('assets/images/logos/favicon.png') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/styles.min.css') }}" />
+    <style>
 
-<body>
-  <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
-    data-sidebar-position="fixed" data-header-position="fixed">
+    </style>
+  </head>
 
-    <!-- Sidebar -->
-    <aside class="left-sidebar">
-      <div>
-        <div class="brand-logo d-flex align-items-center justify-content-between">
-          <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
-            <i class="ti ti-x fs-8"></i>
-          </div>
+  <body>
+    <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+      data-sidebar-position="fixed" data-header-position="fixed">
+
+      <!-- Sidebar -->
+      <aside class="left-sidebar">
+        <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
+          <i class="ti ti-x fs-8"></i>
         </div>
         <nav class="sidebar-nav scroll-sidebar" data-simplebar="">
           <ul id="sidebarnav">
@@ -31,8 +31,8 @@
             <li class="sidebar-item"><a class="sidebar-link" href="{{ url('register') }}"><i class="ti ti-user-plus"></i><span class="hide-menu">Register</span></a></li>
           </ul>
         </nav>
-      </div>
-    </aside>
+      </aside>
+
 
     <!-- Main -->
     <div class="body-wrapper">
@@ -50,14 +50,14 @@
             <ul class="navbar-nav flex-row ms-auto align-items-center justify-content-end">
               <li class="nav-item dropdown">
                 <a class="nav-link nav-icon-hover" href="#" data-bs-toggle="dropdown">
-                  <img src="{{ asset('assets/images/profile/user-1.jpg') }}" width="35" height="35" class="rounded-circle" alt="">
+                  <img src="../assets/images/profile/user-1.jpg" width="35" height="35" class="rounded-circle" alt="">
                 </a>
                 <div class="dropdown-menu dropdown-menu-end dropdown-menu-animate-up">
                   <div class="message-body">
                     <a href="#" class="d-flex align-items-center gap-2 dropdown-item">
                       <i class="ti ti-user fs-6"></i><p class="mb-0 fs-3">Profil</p>
                     </a>
-                    <a href="{{ url('login') }}" class="btn btn-outline-primary mx-3 mt-2 d-block">Logout</a>
+                    <a href="./authentication-login.html" class="btn btn-outline-primary mx-3 mt-2 d-block">Logout</a>
                   </div>
                 </div>
               </li>
@@ -66,18 +66,19 @@
         </nav>
       </header>
 
-      @yield('content')
 
-      <!-- Scripts -->
-      <script src="{{ asset('assets/libs/jquery/dist/jquery.min.js') }}"></script>
-      <script src="{{ asset('assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js') }}"></script>
-      <script src="{{ asset('assets/js/sidebarmenu.js') }}"></script>
-      <script src="{{ asset('assets/js/app.min.js') }}"></script>
-      <script src="{{ asset('assets/libs/simplebar/dist/simplebar.js') }}"></script>
-      <script src="{{ asset('assets/libs/apexcharts/dist/apexcharts.min.js') }}"></script>
+        @yield('content')
 
-      @stack('scripts')
+        <!-- Scripts -->
+        <script src="{{ asset('assets/libs/jquery/dist/jquery.min.js') }}"></script>
+        <script src="{{ asset('assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js') }}"></script>
+        <script src="{{ asset('assets/js/sidebarmenu.js') }}"></script>
+        <script src="{{ asset('assets/js/app.min.js') }}"></script>
+        <script src="{{ asset('assets/libs/simplebar/dist/simplebar.js') }}"></script>
+        <script src="{{ asset('assets/libs/apexcharts/dist/apexcharts.min.js') }}"></script>
+
+        @stack('scripts')
+      </div>
     </div>
-  </div>
-</body>
-</html>
+  </body>
+  </html>

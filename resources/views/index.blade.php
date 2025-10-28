@@ -116,7 +116,7 @@
   const options = {
     chart: { type: 'line', height: 300, toolbar: { show: false } },
     series: seriesData,
-    xaxis: { categories: categories, labels: { show: false }, title: { text: 'Bulan' }, offsetY: 50 },
+    xaxis: { categories: categories, labels: { show: false }, title: { text: 'Bulan' }, offsetY: 55 },
     yaxis: { title: { text: 'Jumlah Balita' }, min: 0, max: 100 },
     stroke: { width: 3, curve: 'smooth' },
     markers: { size: 5 },
