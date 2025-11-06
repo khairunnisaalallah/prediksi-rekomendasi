@@ -24,8 +24,9 @@
           <ul id="sidebarnav">
             <li class="nav-small-cap"><i class="ti ti-dots nav-small-cap-icon fs-4"></i><span class="hide-menu">Home</span></li>
             <li class="sidebar-item"><a class="sidebar-link" href="{{ url('/') }}"><i class="ti ti-layout-dashboard"></i><span class="hide-menu">Dashboard</span></a></li>
-            <li class="sidebar-item"><a class="sidebar-link" href="{{ url('diagnosis-gizi') }}"><i class="ti ti-file-description"></i><span class="hide-menu">Diagnosis Gizi</span></a></li>
             <li class="sidebar-item"><a class="sidebar-link" href="{{ url('data-balita') }}"><i class="ti ti-article"></i><span class="hide-menu">Data Balita</span></a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="{{ url('diagnosis-gizi') }}"><i class="ti ti-file-description"></i><span class="hide-menu">Diagnosis Gizi</span></a></li>
+            <li class="sidebar-item"><a class="sidebar-link" href="{{ url('prediksi') }}"><i class="ti ti-brain"></i><span class="hide-menu">Prediksi</span></a></li>
             <li class="sidebar-item"><a class="sidebar-link" href="{{ url('panduan') }}"><i class="ti ti-cards"></i><span class="hide-menu">Panduan</span></a></li>
             <li class="sidebar-item"><a class="sidebar-link" href="{{ url('login') }}"><i class="ti ti-login"></i><span class="hide-menu">Login</span></a></li>
             <li class="sidebar-item"><a class="sidebar-link" href="{{ url('register') }}"><i class="ti ti-user-plus"></i><span class="hide-menu">Register</span></a></li>

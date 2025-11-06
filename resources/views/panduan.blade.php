@@ -6,23 +6,33 @@
     <div class="card-body">
       <h5 class="card-title fw-semibold mb-3">Panduan Penggunaan Sistem</h5>
 
-      <p>Halaman ini membantu kader posyandu memahami langkah-langkah menggunakan sistem rekomendasi gizi balita berbasis AI (SLM).</p>
+      <p>Halaman ini membantu kader posyandu memahami langkah‑langkah menggunakan sistem dan alur data antar halaman.</p>
 
-      <h6 class="fw-semibold mt-4">🧭 Navigasi Menu</h6>
+      <h6 class="fw-semibold mt-4">Navigasi Menu</h6>
       <ul>
-        <li><b>🏠 Dashboard:</b> Menampilkan ringkasan jumlah balita, grafik status gizi, dan hasil diagnosis terbaru.</li>
-        <li><b>🧒 Diagnosis Gizi:</b> Isi data balita → klik <i>Diagnosis</i> → hasil status & rekomendasi muncul otomatis.</li>
-        <li><b>📋 Data Balita:</b> Menampilkan seluruh hasil diagnosis yang pernah dilakukan.</li>
-        <li><b>❓ Panduan:</b> Berisi petunjuk penggunaan sistem (halaman ini).</li>
+        <li><b>Dashboard:</b> Ringkasan dan statistik.</li>
+        <li><b>Data Balita:</b> Tambah/kelola data dasar balita (Nama, JK, Tanggal Lahir, BB/TB opsional). Usia dihitung otomatis dari tanggal lahir.</li>
+        <li><b>Diagnosis Gizi:</b> Pilih balita dari dropdown, isi/cek BB & TB, lalu klik <i>Diagnosis</i> untuk mendapat status & rekomendasi. Hasilnya akan memperbarui data balita, bukan menambah baris baru.</li>
+        <li><b>Prediksi:</b> Melihat prediksi bulan depan per balita (tanpa tombol edit/hapus). Tanggal lahir tampil sebelum usia.</li>
+        <li><b>Panduan:</b> Petunjuk penggunaan sistem (halaman ini).</li>
       </ul>
 
-      <h6 class="fw-semibold mt-4">🩺 Langkah-Langkah Melakukan Diagnosis</h6>
+      <h6 class="fw-semibold mt-4">Langkah Tambah/Kelola Data Balita</h6>
       <ol>
-        <li>Masuk ke menu <b>Diagnosis Gizi</b>.</li>
-        <li>Isi data balita lengkap: Nama, Jenis Kelamin, Usia, Berat, Tinggi.</li>
-        <li>Klik tombol <b>Diagnosis</b>.</li>
-        <li>Tunggu hasil muncul di sisi kanan: status gizi & rekomendasi gizi AI.</li>
-        <li>Klik <b>Simpan</b> jika ingin menambah ke daftar Data Balita.</li>
+        <li>Buka menu <b>Data Balita</b>, klik <b>Tambah Data</b>.</li>
+        <li>Isi <b>Nama</b>, pilih <b>Jenis Kelamin</b> (mulai dari "Pilih jenis kelamin"), dan pilih <b>Tanggal Lahir</b> dari kalender.</li>
+        <li>Kolom <b>Usia (bln)</b> terisi otomatis dari tanggal lahir. <b>Berat</b> dan <b>Tinggi</b> bersifat opsional.</li>
+        <li>Klik <b>Simpan</b>. Data muncul di tabel dengan tombol edit/hapus.</li>
+        <li>Untuk mengubah/hapus, gunakan ikon <i>pensil</i>/<i>tempat sampah</i> pada baris data.</li>
+      </ol>
+
+      <h6 class="fw-semibold mt-4">Langkah Diagnosis Gizi</h6>
+      <ol>
+        <li>Pastikan data balita sudah ada di menu <b>Data Balita</b>.</li>
+        <li>Buka menu <b>Diagnosis Gizi</b>, pilih <b>Nama Balita</b> dari dropdown (diambil dari Data Balita).</li>
+        <li>Sistem akan mengisi otomatis <b>JK</b>, <b>Tanggal Lahir</b>, dan menghitung <b>Usia</b>. Lengkapi/cek <b>BB</b> dan <b>TB</b> bila perlu.</li>
+        <li>Klik tombol <b>Diagnosis</b> untuk melihat status gizi dan rekomendasi.</li>
+        <li>Hasil diagnosis akan <b>memperbarui</b> data balita yang dipilih (tidak menambah baris baru).</li>
       </ol>
 
       <h6 class="fw-semibold mt-4">📊 Arti Warna Status Gizi</h6>
@@ -52,8 +62,15 @@
         </table>
       </div>
 
-      <h6 class="fw-semibold mt-4">🍎 Tips Membaca Rekomendasi AI</h6>
-      <p>Rekomendasi yang ditampilkan bersifat otomatis dan informatif. Jika hasil menunjukkan <b>Gizi Kurang</b> atau <b>Gizi Buruk</b>, segera sarankan orang tua untuk berkonsultasi ke puskesmas terdekat.</p>
+      <h6 class="fw-semibold mt-4">Halaman Prediksi</h6>
+      <ul>
+        <li>Menampilkan data balita (dari Data Balita) dengan kolom: Tanggal Lahir sebelum Usia.</li>
+        <li>Kolom terakhir berisi <b>Prediksi Bulan Depan</b> (perkiraan BB/TB/Usia dan status).</li>
+        <li>Tidak ada tombol edit/hapus pada halaman ini.</li>
+      </ul>
+
+      <h6 class="fw-semibold mt-4">Tips Membaca Rekomendasi AI</h6>
+      <p>Rekomendasi bersifat informatif. Jika hasil menunjukkan <b>Gizi Kurang</b> atau <b>Gizi Buruk</b>, arahkan untuk konsultasi ke fasilitas kesehatan terdekat.</p>
     </div>
   </div>
 </div>

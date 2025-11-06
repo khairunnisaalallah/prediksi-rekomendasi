@@ -11,7 +11,10 @@
           <form id="formDiagnosis">
             <div class="mb-3">
               <label class="form-label">Nama Balita</label>
-              <input type="text" class="form-control" id="namaBalita" required>
+              <select class="form-select" id="namaBalita" required>
+                <option value="" selected disabled>Pilih Balita</option>
+              </select>
+              <small class="text-muted">Nama diambil dari daftar "Data Balita".</small>
             </div>
 
             <div class="mb-3">
@@ -79,16 +82,93 @@
 
 @push('scripts')
 <script>
+// ==== Helpers tanggal ====
+function parseDDMMYYYY(s){
+  if (!s || typeof s !== 'string') return null;
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const d = parseInt(m[1],10), mo = parseInt(m[2],10)-1, y = parseInt(m[3],10);
+  const dt = new Date(y,mo,d);
+  return (dt.getFullYear()===y && dt.getMonth()===mo && dt.getDate()===d) ? dt : null;
+}
+function parseYYYYMMDD(s){
+  if (!s || typeof s !== 'string') return null;
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const y = parseInt(m[1],10), mo = parseInt(m[2],10)-1, d = parseInt(m[3],10);
+  const dt = new Date(y,mo,d);
+  return (dt.getFullYear()===y && dt.getMonth()===mo && dt.getDate()===d) ? dt : null;
+}
+function parseFlexibleDate(s){ return parseDDMMYYYY(s) || parseYYYYMMDD(s); }
+function formatYYYYMMDD(dt){
+  const dd = String(dt.getDate()).padStart(2,'0');
+  const mm = String(dt.getMonth()+1).padStart(2,'0');
+  const yyyy = dt.getFullYear();
+  return `${yyyy}-${mm}-${dd}`;
+}
+function monthsDiff(from, to){
+  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
+  if (to.getDate() < from.getDate()) months -= 1;
+  return months < 0 ? 0 : months;
+}
+
 // ==== Kalkulator usia ====
 const tglLahirInput = document.getElementById('tglLahir');
 const usiaInput = document.getElementById('usia');
 tglLahirInput.addEventListener('change', () => {
-  const tglLahir = new Date(tglLahirInput.value);
+  const tglLahir = parseYYYYMMDD(tglLahirInput.value);
   const today = new Date();
-  let months = (today.getFullYear() - tglLahir.getFullYear()) * 12 + (today.getMonth() - tglLahir.getMonth());
-  if (today.getDate() < tglLahir.getDate()) months -= 1;
-  usiaInput.value = months >= 0 ? months : 0;
+  usiaInput.value = tglLahir ? monthsDiff(tglLahir, today) : '';
 });
+// batasi tanggal lahir maksimal hari ini
+tglLahirInput.setAttribute('max', formatYYYYMMDD(new Date()));
+
+// ==== Dropdown nama dari LocalStorage ====
+const namaSelect = document.getElementById('namaBalita');
+const jkSelect = document.getElementById('jenisKelamin');
+const bbInput = document.getElementById('bb');
+const tbInput = document.getElementById('tb');
+
+function loadNamaOptions(){
+  namaSelect.innerHTML = '<option value="" disabled selected>Pilih Balita</option>';
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem('dataBalita') || '[]'); } catch(e) { list = []; }
+  // deduplicate by name, keep latest occurrence
+  const map = new Map();
+  list.forEach((item, idx) => { if (item && item.nama) map.set(item.nama, {idx, item}); });
+
+  Array.from(map.keys()).sort().forEach(nm => {
+    const {item} = map.get(nm);
+    const opt = document.createElement('option');
+    opt.value = nm;
+    opt.textContent = nm;
+    if (item._id) opt.dataset.id = item._id;
+    opt.dataset.jk = item.jk || '';
+    opt.dataset.tgl = item.tglLahir || item.tanggal || '';
+    if (typeof item.bb !== 'undefined') opt.dataset.bb = item.bb;
+    if (typeof item.tb !== 'undefined') opt.dataset.tb = item.tb;
+    namaSelect.appendChild(opt);
+  });
+}
+
+namaSelect.addEventListener('change', () => {
+  const opt = namaSelect.options[namaSelect.selectedIndex];
+  if (!opt) return;
+  // set JK
+  if (opt.dataset.jk) jkSelect.value = opt.dataset.jk;
+  // set tgl lahir (if available)
+  const parsed = parseFlexibleDate(opt.dataset.tgl);
+  tglLahirInput.value = parsed ? formatYYYYMMDD(parsed) : '';
+  // trigger usia compute
+  const dt = parsed;
+  usiaInput.value = dt ? monthsDiff(dt, new Date()) : '';
+  // optional isi bb/tb jika ada
+  bbInput.value = (typeof opt.dataset.bb !== 'undefined') ? opt.dataset.bb : '';
+  tbInput.value = (typeof opt.dataset.tb !== 'undefined') ? opt.dataset.tb : '';
+});
+
+// init options pada load
+document.addEventListener('DOMContentLoaded', loadNamaOptions);
 
 // ==== Dataset mini WHO (median dan SD BB/U) ====
 const refWHO = {
@@ -168,6 +248,7 @@ document.getElementById('formDiagnosis').addEventListener('submit', e => {
   const usia = parseFloat(document.getElementById('usia').value);
   const bb = parseFloat(document.getElementById('bb').value);
   const tb = parseFloat(document.getElementById('tb').value);
+  const tglLahirStr = document.getElementById('tglLahir').value; // yyyy-mm-dd
 
   // Tampilkan data
   document.getElementById('outNama').innerText = nama;
@@ -195,22 +276,42 @@ document.getElementById('formDiagnosis').addEventListener('submit', e => {
   bar.className = `progress-bar ${warna}`;
   bar.style.width = persen + "%";
   document.getElementById('outStatus').innerText = `${status} (Z = ${z.toFixed(2)})`;
-  // Simpan ke LocalStorage
+  // Siapkan rekomendasi
   const rekom = status === "Gizi Baik" ? "Pertahankan pola makan seimbang, tambah buah setiap hari." :
     status === "Gizi Kurang" ? "Tingkatkan asupan protein hewani seperti telur, ikan, ayam." :
     status === "Gizi Buruk" ? "Segera konsultasi ke tenaga kesehatan dan perbaiki pola makan." :
     "Perhatikan asupan makanan dan aktivitas fisik.";
-  const tanggal = new Date().toLocaleDateString('id-ID');
-  const balitaBaru = { nama, jk, usia, bb, tb, status, rekom, tanggal };
   try {
     let dataBalita = JSON.parse(localStorage.getItem('dataBalita') || '[]');
-    dataBalita.push(balitaBaru);
+    const selectedOpt = namaSelect.options[namaSelect.selectedIndex];
+    const selId = selectedOpt ? (selectedOpt.dataset.id || null) : null;
+    let idx = -1;
+    if (selId) {
+      idx = dataBalita.findIndex(x => x && x._id === selId);
+    }
+    if (idx === -1) {
+      idx = dataBalita.findIndex(x => x && x.nama === nama);
+    }
+    if (idx === -1) {
+      if (window.showNotification) window.showNotification(false, 'Data balita tidak ditemukan untuk diperbarui');
+      return;
+    }
+
+    // Update field yang relevan
+    dataBalita[idx].nama = nama;
+    dataBalita[idx].jk = jk;
+    if (tglLahirStr) dataBalita[idx].tglLahir = tglLahirStr; // yyyy-mm-dd
+    if (!isNaN(bb)) dataBalita[idx].bb = bb;
+    if (!isNaN(tb)) dataBalita[idx].tb = tb;
+    dataBalita[idx].status = status;
+    dataBalita[idx].rekom = rekom;
+
     localStorage.setItem('dataBalita', JSON.stringify(dataBalita));
-    // feedback sukses (do NOT reset form per request)
-    if (window.showNotification) window.showNotification(true, 'Data berhasil ditambahkan');
+    loadNamaOptions();
+    if (window.showNotification) window.showNotification(true, 'Data balita berhasil diperbarui');
   } catch (err) {
     console.error('Gagal menyimpan data:', err);
-    if (window.showNotification) window.showNotification(false, 'Gagal menyimpan data');
+    if (window.showNotification) window.showNotification(false, 'Gagal memperbarui data');
   }
 });
 </script>

@@ -19,6 +19,10 @@ Route::get('/data-balita', function () {
     return view('data-balita');
 });
 
+Route::get('/prediksi', function () {
+    return view('prediksi');
+});
+
 Route::get('/diagnosis-gizi', function () {
     return view('diagnosis-gizi');
 });
