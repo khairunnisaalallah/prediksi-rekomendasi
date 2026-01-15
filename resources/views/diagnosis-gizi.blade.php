@@ -3,7 +3,6 @@
 @section('content')
 <div class="container-fluid mt-2">
   <div class="row">
-    <!-- Form kiri -->
     <div class="col-lg-6">
       <div class="card">
         <div class="card-body">
@@ -13,8 +12,21 @@
               <label class="form-label">Nama Balita</label>
               <select class="form-select" id="namaBalita" required>
                 <option value="" selected disabled>Pilih Balita</option>
+                @foreach ($balitas as $balita)
+                  <option
+                    value="{{ $balita->id }}"
+                    data-nama="{{ $balita->nama }}"
+                    data-jk="{{ $balita->jenis_kelamin }}"
+                    data-lahir="{{ optional($balita->tanggal_lahir)->format('Y-m-d') }}"
+                    data-bb="{{ $balita->berat }}"
+                    data-tb="{{ $balita->tinggi }}"
+                    data-rekom="{{ $balita->rekomendasi }}"
+                  >
+                    {{ $balita->nama }}
+                  </option>
+                @endforeach
               </select>
-              <small class="text-muted">Nama diambil dari daftar "Data Balita".</small>
+              <small class="text-muted">Nama diambil dari data balita yang tersimpan di database.</small>
             </div>
 
             <div class="mb-3">
@@ -48,12 +60,12 @@
             </div>
 
             <button type="submit" class="btn btn-primary w-100">Diagnosis</button>
+            <div id="diagFeedback" class="alert d-none mt-3" role="alert"></div>
           </form>
         </div>
       </div>
     </div>
 
-    <!-- Hasil kanan -->
     <div class="col-lg-6">
       <div class="card mb-3">
         <div class="card-body">
@@ -76,243 +88,191 @@
           <small class="text-muted">Acuan: Standar Antropometri Anak (PMK No.2 Tahun 2020)</small>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title fw-semibold mb-2">Rekomendasi</h5>
+          <p id="outRekom" class="mb-0 text-muted">-</p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 @push('scripts')
 <script>
-// ==== Helpers tanggal ====
-function parseDDMMYYYY(s){
-  if (!s || typeof s !== 'string') return null;
-  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!m) return null;
-  const d = parseInt(m[1],10), mo = parseInt(m[2],10)-1, y = parseInt(m[3],10);
-  const dt = new Date(y,mo,d);
-  return (dt.getFullYear()===y && dt.getMonth()===mo && dt.getDate()===d) ? dt : null;
-}
-function parseYYYYMMDD(s){
-  if (!s || typeof s !== 'string') return null;
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return null;
-  const y = parseInt(m[1],10), mo = parseInt(m[2],10)-1, d = parseInt(m[3],10);
-  const dt = new Date(y,mo,d);
-  return (dt.getFullYear()===y && dt.getMonth()===mo && dt.getDate()===d) ? dt : null;
-}
-function parseFlexibleDate(s){ return parseDDMMYYYY(s) || parseYYYYMMDD(s); }
-function formatYYYYMMDD(dt){
-  const dd = String(dt.getDate()).padStart(2,'0');
-  const mm = String(dt.getMonth()+1).padStart(2,'0');
-  const yyyy = dt.getFullYear();
-  return `${yyyy}-${mm}-${dd}`;
-}
-function monthsDiff(from, to){
-  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
-  if (to.getDate() < from.getDate()) months -= 1;
-  return months < 0 ? 0 : months;
-}
+document.addEventListener('DOMContentLoaded', () => {
+  const csrfToken = '{{ csrf_token() }}';
 
-// ==== Kalkulator usia ====
-const tglLahirInput = document.getElementById('tglLahir');
-const usiaInput = document.getElementById('usia');
-tglLahirInput.addEventListener('change', () => {
-  const tglLahir = parseYYYYMMDD(tglLahirInput.value);
-  const today = new Date();
-  usiaInput.value = tglLahir ? monthsDiff(tglLahir, today) : '';
-});
-// batasi tanggal lahir maksimal hari ini
-tglLahirInput.setAttribute('max', formatYYYYMMDD(new Date()));
+  function parseYYYYMMDD(s){
+    if (!s || typeof s !== 'string') return null;
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    const y = parseInt(m[1],10), mo = parseInt(m[2],10)-1, d = parseInt(m[3],10);
+    const dt = new Date(y,mo,d);
+    return (dt.getFullYear()===y && dt.getMonth()===mo && dt.getDate()===d) ? dt : null;
+  }
+  function formatYYYYMMDD(dt){
+    const dd = String(dt.getDate()).padStart(2,'0');
+    const mm = String(dt.getMonth()+1).padStart(2,'0');
+    const yyyy = dt.getFullYear();
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  function monthsDiff(from, to){
+    let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
+    if (to.getDate() < from.getDate()) months -= 1;
+    return months < 0 ? 0 : months;
+  }
 
-// ==== Dropdown nama dari LocalStorage ====
-const namaSelect = document.getElementById('namaBalita');
-const jkSelect = document.getElementById('jenisKelamin');
-const bbInput = document.getElementById('bb');
-const tbInput = document.getElementById('tb');
+  const namaSelect = document.getElementById('namaBalita');
+  const jkSelect = document.getElementById('jenisKelamin');
+  const tglLahirInput = document.getElementById('tglLahir');
+  const usiaInput = document.getElementById('usia');
+  const bbInput = document.getElementById('bb');
+  const tbInput = document.getElementById('tb');
 
-function loadNamaOptions(){
-  namaSelect.innerHTML = '<option value="" disabled selected>Pilih Balita</option>';
-  let list = [];
-  try { list = JSON.parse(localStorage.getItem('dataBalita') || '[]'); } catch(e) { list = []; }
-  // deduplicate by name, keep latest occurrence
-  const map = new Map();
-  list.forEach((item, idx) => { if (item && item.nama) map.set(item.nama, {idx, item}); });
-
-  Array.from(map.keys()).sort().forEach(nm => {
-    const {item} = map.get(nm);
-    const opt = document.createElement('option');
-    opt.value = nm;
-    opt.textContent = nm;
-    if (item._id) opt.dataset.id = item._id;
-    opt.dataset.jk = item.jk || '';
-    opt.dataset.tgl = item.tglLahir || item.tanggal || '';
-    if (typeof item.bb !== 'undefined') opt.dataset.bb = item.bb;
-    if (typeof item.tb !== 'undefined') opt.dataset.tb = item.tb;
-    namaSelect.appendChild(opt);
-  });
-}
-
-namaSelect.addEventListener('change', () => {
-  const opt = namaSelect.options[namaSelect.selectedIndex];
-  if (!opt) return;
-  // set JK
-  if (opt.dataset.jk) jkSelect.value = opt.dataset.jk;
-  // set tgl lahir (if available)
-  const parsed = parseFlexibleDate(opt.dataset.tgl);
-  tglLahirInput.value = parsed ? formatYYYYMMDD(parsed) : '';
-  // trigger usia compute
-  const dt = parsed;
-  usiaInput.value = dt ? monthsDiff(dt, new Date()) : '';
-  // optional isi bb/tb jika ada
-  bbInput.value = (typeof opt.dataset.bb !== 'undefined') ? opt.dataset.bb : '';
-  tbInput.value = (typeof opt.dataset.tb !== 'undefined') ? opt.dataset.tb : '';
-});
-
-// init options pada load
-document.addEventListener('DOMContentLoaded', loadNamaOptions);
-
-// ==== Dataset mini WHO (median dan SD BB/U) ====
-const refWHO = {
-  "Laki-laki": { 0: { median: 3.3, sd: 0.5 }, 6: { median: 7.9, sd: 0.8 }, 12: { median: 9.6, sd: 0.9 }, 24: { median: 12.2, sd: 1.1 }, 36: { median: 14.3, sd: 1.3 }, 48: { median: 16.3, sd: 1.5 }, 60: { median: 18.3, sd: 1.7 } },
-  "Perempuan": { 0: { median: 3.2, sd: 0.5 }, 6: { median: 7.3, sd: 0.8 }, 12: { median: 8.9, sd: 0.9 }, 24: { median: 11.5, sd: 1.1 }, 36: { median: 13.9, sd: 1.3 }, 48: { median: 15.9, sd: 1.5 }, 60: { median: 17.9, sd: 1.7 } }
-};
-
-function getRef(gender, ageMonth) {
-  const data = refWHO[gender];
-  const keys = Object.keys(data).map(Number);
-  let nearest = keys[0];
-  keys.forEach(k => { if (Math.abs(ageMonth - k) < Math.abs(ageMonth - nearest)) nearest = k; });
-  return data[nearest];
-}
-
-// ==== Notification helper (top-center) ====
-(function(){
-  const notif = document.createElement('div');
-  notif.id = 'notifMessage';
-  notif.setAttribute('aria-live','polite');
-  notif.style.position = 'fixed';
-  notif.style.left = '50%';
-  notif.style.top = '24px';
-  notif.style.transform = 'translateX(-50%)';
-  notif.style.zIndex = 99999;
-  notif.style.pointerEvents = 'none';
-  document.body.appendChild(notif);
-
-  let notifTimer = null;
-  window.showNotification = function(success, message){
-    if (notifTimer) { clearTimeout(notifTimer); notifTimer = null; }
-    notif.innerHTML = '';
-    const box = document.createElement('div');
-    box.style.display = 'inline-flex';
-    box.style.alignItems = 'center';
-    box.style.gap = '8px';
-    box.style.pointerEvents = 'auto';
-    box.style.padding = '10px 14px';
-    box.style.borderRadius = '8px';
-    box.style.boxShadow = '0 6px 18px rgba(0,0,0,0.08)';
-    box.style.fontSize = '14px';
-    box.style.color = success ? '#0f5132' : '#842029';
-    box.style.background = success ? '#d1e7dd' : '#f8d7da';
-    box.style.opacity = '0';
-    box.style.transition = 'opacity 220ms ease';
-
-    const icon = document.createElement('span');
-    icon.style.display = 'inline-block';
-    icon.style.width = '20px';
-    icon.style.height = '20px';
-    icon.style.flex = '0 0 20px';
-    icon.style.fontWeight = '700';
-    icon.style.textAlign = 'center';
-    icon.style.lineHeight = '20px';
-    icon.textContent = success ? '✓' : '✕';
-    icon.style.color = success ? '#0f5132' : '#842029';
-
-    const txt = document.createElement('div');
-    txt.textContent = message || (success ? 'Berhasil' : 'Gagal');
-
-    box.appendChild(icon);
-    box.appendChild(txt);
-    notif.appendChild(box);
-
-    // auto hide after 3500ms
-    requestAnimationFrame(() => { box.style.opacity = '1'; });
-    notifTimer = setTimeout(() => { notif.innerHTML = ''; notifTimer = null; }, 3500);
+  const handleAge = () => {
+    const tglLahir = parseYYYYMMDD(tglLahirInput.value);
+    usiaInput.value = tglLahir ? monthsDiff(tglLahir, new Date()) : '';
   };
-})();
+  tglLahirInput.addEventListener('change', handleAge);
+  tglLahirInput.setAttribute('max', formatYYYYMMDD(new Date()));
 
-// ==== Event submit form ====
-document.getElementById('formDiagnosis').addEventListener('submit', e => {
-  e.preventDefault();
+  namaSelect.addEventListener('change', () => {
+    const opt = namaSelect.selectedOptions[0];
+    if (!opt) return;
+    const { jk, lahir, bb, tb } = opt.dataset;
+    if (jk) jkSelect.value = jk;
+    tglLahirInput.value = lahir || '';
+    handleAge();
+    bbInput.value = bb ?? '';
+    tbInput.value = tb ?? '';
 
-  const nama = document.getElementById('namaBalita').value;
-  const jk = document.getElementById('jenisKelamin').value;
-  const usia = parseFloat(document.getElementById('usia').value);
-  const bb = parseFloat(document.getElementById('bb').value);
-  const tb = parseFloat(document.getElementById('tb').value);
-  const tglLahirStr = document.getElementById('tglLahir').value; // yyyy-mm-dd
+    document.getElementById('outNama').innerText = opt.dataset.nama || '-';
+    document.getElementById('outJK').innerText = jkSelect.value || '-';
+    document.getElementById('outUsia').innerText = usiaInput.value || '-';
+    document.getElementById('outBB').innerText = bbInput.value || '-';
+    document.getElementById('outTB').innerText = tbInput.value || '-';
+    document.getElementById('outRekom').innerText = opt.dataset.rekom || '-';
+  });
 
-  // Tampilkan data
-  document.getElementById('outNama').innerText = nama;
-  document.getElementById('outJK').innerText = jk;
-  document.getElementById('outUsia').innerText = usia;
-  document.getElementById('outBB').innerText = bb;
-  document.getElementById('outTB').innerText = tb;
+  const refWHO = {
+    "Laki-laki": { 0: { median: 3.3, sd: 0.5 }, 6: { median: 7.9, sd: 0.8 }, 12: { median: 9.6, sd: 0.9 }, 24: { median: 12.2, sd: 1.1 }, 36: { median: 14.3, sd: 1.3 }, 48: { median: 16.3, sd: 1.5 }, 60: { median: 18.3, sd: 1.7 } },
+    "Perempuan": { 0: { median: 3.2, sd: 0.5 }, 6: { median: 7.3, sd: 0.8 }, 12: { median: 8.9, sd: 0.9 }, 24: { median: 11.5, sd: 1.1 }, 36: { median: 13.9, sd: 1.3 }, 48: { median: 15.9, sd: 1.5 }, 60: { median: 17.9, sd: 1.7 } }
+  };
 
-  // Ambil referensi WHO
-  const ref = getRef(jk, usia);
-  const z = (bb - ref.median) / ref.sd;
+  function getRef(gender, ageMonth) {
+    const data = refWHO[gender];
+    if (!data) return null;
+    const keys = Object.keys(data).map(Number);
+    let nearest = keys[0];
+    keys.forEach(k => { if (Math.abs(ageMonth - k) < Math.abs(ageMonth - nearest)) nearest = k; });
+    return data[nearest] || null;
+  }
 
-  // Tentukan status
-  let status = "";
-  let warna = "";
-  let persen = 50;
+  document.getElementById('formDiagnosis').addEventListener('submit', e => {
+    e.preventDefault();
+    const feedback = document.getElementById('diagFeedback');
+    const setFeedback = (msg, ok = true) => {
+      feedback.textContent = msg;
+      feedback.classList.remove('d-none', 'alert-success', 'alert-danger');
+      feedback.classList.add(ok ? 'alert-success' : 'alert-danger');
+    };
+    const clearFeedback = () => {
+      feedback.classList.add('d-none');
+      feedback.textContent = '';
+    };
+    clearFeedback();
 
-  if (z > 2) { status = "Gizi Lebih"; warna = "bg-primary"; persen = 90; }
-  else if (z >= -2) { status = "Gizi Baik"; warna = "bg-success"; persen = 70; }
-  else if (z >= -3) { status = "Gizi Kurang"; warna = "bg-warning"; persen = 40; }
-  else { status = "Gizi Buruk"; warna = "bg-danger"; persen = 20; }
+    const opt = namaSelect.selectedOptions[0];
+    const nama = opt ? (opt.dataset.nama || opt.textContent) : '';
+    const balitaId = opt ? opt.value : null;
+    const jk = jkSelect.value;
+    const usia = parseFloat(usiaInput.value);
+    const bb = parseFloat(bbInput.value);
+    const tb = parseFloat(tbInput.value);
 
-  // Update UI
-  const bar = document.getElementById('barGizi');
-  bar.className = `progress-bar ${warna}`;
-  bar.style.width = persen + "%";
-  document.getElementById('outStatus').innerText = `${status} (Z = ${z.toFixed(2)})`;
-  // Siapkan rekomendasi
-  const rekom = status === "Gizi Baik" ? "Pertahankan pola makan seimbang, tambah buah setiap hari." :
-    status === "Gizi Kurang" ? "Tingkatkan asupan protein hewani seperti telur, ikan, ayam." :
-    status === "Gizi Buruk" ? "Segera konsultasi ke tenaga kesehatan dan perbaiki pola makan." :
-    "Perhatikan asupan makanan dan aktivitas fisik.";
-  try {
-    let dataBalita = JSON.parse(localStorage.getItem('dataBalita') || '[]');
-    const selectedOpt = namaSelect.options[namaSelect.selectedIndex];
-    const selId = selectedOpt ? (selectedOpt.dataset.id || null) : null;
-    let idx = -1;
-    if (selId) {
-      idx = dataBalita.findIndex(x => x && x._id === selId);
+    document.getElementById('outNama').innerText = nama || '-';
+    document.getElementById('outJK').innerText = jk || '-';
+    document.getElementById('outUsia').innerText = isNaN(usia) ? '-' : usia;
+    document.getElementById('outBB').innerText = isNaN(bb) ? '-' : bb;
+    document.getElementById('outTB').innerText = isNaN(tb) ? '-' : tb;
+
+    const ref = getRef(jk, usia);
+    if (!ref || isNaN(bb)) {
+      document.getElementById('outStatus').innerText = 'Data tidak lengkap';
+      const bar = document.getElementById('barGizi');
+      bar.className = 'progress-bar bg-warning';
+      bar.style.width = '40%';
+      return;
     }
-    if (idx === -1) {
-      idx = dataBalita.findIndex(x => x && x.nama === nama);
-    }
-    if (idx === -1) {
-      if (window.showNotification) window.showNotification(false, 'Data balita tidak ditemukan untuk diperbarui');
+    const z = (bb - ref.median) / ref.sd;
+
+    let status = "";
+    let warna = "";
+    let persen = 50;
+
+    if (z > 2) { status = "Gizi Lebih"; warna = "bg-primary"; persen = 90; }
+    else if (z >= -2) { status = "Gizi Baik"; warna = "bg-success"; persen = 70; }
+    else if (z >= -3) { status = "Gizi Kurang"; warna = "bg-warning"; persen = 40; }
+    else { status = "Gizi Buruk"; warna = "bg-danger"; persen = 20; }
+
+    const bar = document.getElementById('barGizi');
+    bar.className = `progress-bar ${warna}`;
+    bar.style.width = persen + "%";
+    document.getElementById('outStatus').innerText = `${status} (Z = ${z.toFixed(2)})`;
+
+    document.getElementById('outRekom').innerText = 'Menyiapkan rekomendasi...';
+
+    if (!balitaId) {
+      alert('Pilih balita terlebih dahulu.');
       return;
     }
 
-    // Update field yang relevan
-    dataBalita[idx].nama = nama;
-    dataBalita[idx].jk = jk;
-    if (tglLahirStr) dataBalita[idx].tglLahir = tglLahirStr; // yyyy-mm-dd
-    if (!isNaN(bb)) dataBalita[idx].bb = bb;
-    if (!isNaN(tb)) dataBalita[idx].tb = tb;
-    dataBalita[idx].status = status;
-    dataBalita[idx].rekom = rekom;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Menyimpan...';
+    }
 
-    localStorage.setItem('dataBalita', JSON.stringify(dataBalita));
-    loadNamaOptions();
-    if (window.showNotification) window.showNotification(true, 'Data balita berhasil diperbarui');
-  } catch (err) {
-    console.error('Gagal menyimpan data:', err);
-    if (window.showNotification) window.showNotification(false, 'Gagal memperbarui data');
-  }
+    fetch(`/diagnosis-gizi/${balitaId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken,
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        status_gizi: status,
+        berat: isNaN(bb) ? null : bb,
+        tinggi: isNaN(tb) ? null : tb,
+      }),
+    })
+    .then(async (res) => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Gagal menyimpan status gizi');
+      }
+      return res.json();
+    })
+    .then((data) => {
+      setFeedback('Diagnosis berhasil disimpan.');
+      const rekom = data.rekomendasi || '-';
+      document.getElementById('outRekom').innerText = rekom;
+      if (opt) opt.dataset.rekom = rekom;
+    })
+    .catch((err) => {
+      console.error(err);
+      setFeedback(err.message || 'Gagal menyimpan status gizi', false);
+      document.getElementById('outRekom').innerText = '-';
+    })
+    .finally(() => {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Diagnosis';
+      }
+    });
+  });
 });
 </script>
 @endpush
